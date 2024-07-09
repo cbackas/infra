@@ -1,0 +1,22 @@
+version: '3'
+tasks:
+  deploy-infra:
+    cmds:
+      - aws cloudformation deploy \
+        --region us-east-2 \
+        --stack-name Matrix \
+        --template-file cf_matrix.yml \
+        --capabilities CAPABILITY_IAM
+    desc: "Deploy AWS CloudFormation stack"
+  init-submodules:
+    cmds:
+      - git submodule update --init --recursive
+  update-submodules:
+    cmds:
+      - git submodule update --recursive --remote --rebase
+  link-inventory:
+    cmds:
+      - ./hardlink_inventory.sh link
+  unlink-inventory:
+    cmds:
+      - ./hardlink_inventory.sh unlink
