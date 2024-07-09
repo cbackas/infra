@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CF Stack for Matrix Server
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [2, !GetAZs '']
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+  InternetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnet
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for EC2 instances to allow specific ports"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: "22"
+          ToPort: "22"
+          CidrIp: "76.150.165.41/32"
+        - IpProtocol: "tcp"
+          FromPort: "80"
+          ToPort: "80"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          FromPort: "443"
+          ToPort: "443"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          FromPort: "3478"
+          ToPort: "3478"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "udp"
+          FromPort: "3478"
+          ToPort: "3478"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          FromPort: "5349"
+          ToPort: "5349"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "udp"
+          FromPort: "5349"
+          ToPort: "5349"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          FromPort: "8448"
+          ToPort: "8448"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "udp"
+          FromPort: "49152"
+          ToPort: "49172"
+          CidrIp: "0.0.0.0/0"
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-062238dd1881580c4
+      # old:
+      # ImageId: ami-024e6efaf93d85776
+      InstanceType: t3a.small
+      KeyName: matrix_2023_06
+      IamInstanceProfile: !Ref InstanceProfile
+      Monitoring: true
+      NetworkInterfaces:
+        - DeleteOnTermination: "true"
+          Description: Primary network interface
+          DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet
+          GroupSet:
+            - Ref: SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sda1"
+          Ebs:
+            VolumeType: "gp3"
+            VolumeSize: 10
+            DeleteOnTermination: true
+            Encrypted: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Format and mount the additional EBS volume
+          mkdir /matrix
+          file -s /dev/nvme1n1 | grep ext4 || mkfs -t ext4 /dev/nvme1n1
+          mount /dev/nvme1n1 /matrix
+          echo '/dev/nvme1n1 /matrix ext4 defaults,nofail 0 2' >> /etc/fstab
+      Tags:
+        - Key: Name
+          Value: matrix-server
+  Volume:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 10
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Encrypted: true
+      Tags:
+        - Key: Name
+          Value: matrix-volume
+  VolumeAttachment1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      InstanceId: !Ref EC2Instance
+      VolumeId: !Ref Volume
+      Device: /dev/sdf
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  EIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt EIP.AllocationId
+      InstanceId: !Ref EC2Instance
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: matrix-synapse-media-bucket
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: "root"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${S3Bucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${S3Bucket}/*"
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EC2Role
+Outputs:
+  ElasticIP:
+    Description: "Elastic IP for the EC2 instance"
+    Value: !Ref EIP
+  S3Bucket:
+    Description: "S3 Bucket for Matrix Media"
+    Value: !GetAtt S3Bucket.RegionalDomainName
