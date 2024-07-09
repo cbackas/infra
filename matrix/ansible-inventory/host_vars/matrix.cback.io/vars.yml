@@ -1,0 +1,98 @@
+# The bare domain name which represents your Matrix identity.
+# Matrix user ids for your server will be of the form (`@user:<matrix-domain>`).
+#
+# Note: this playbook does not touch the server referenced here.
+# Installation happens on another server ("matrix.<matrix-domain>").
+#
+# If you've deployed using the wrong domain, you'll have to run the Uninstalling step,
+# because you can't change the Domain after deployment.
+#
+# Example value: example.com
+matrix_domain: cback.io
+# The Matrix homeserver software to install.
+# See:
+#  - `roles/custom/matrix-base/defaults/main.yml` for valid options
+# - the `docs/configuring-playbook-IMPLEMENTATION_NAME.md` documentation page, if one is available for your implementation choice
+matrix_homeserver_implementation: synapse
+# A secret used as a base, for generating various other secrets.
+# You can put any string here, but generating a strong one is preferred (e.g. `pwgen -s 64 1`).
+# matrix_homeserver_generic_secret_key: 'A8xiWYbzhyjtekeoPxGuwtKfmuvPYNwoa7jchdRrKYGavXPNjeigLRpEeFNdD8ns8HdBeuygweqLS5xmGygdoNJc2RQ5Y4UCYoRsniU9JbEsSAmLaPffzFkyXckmo9UW'
+matrix_homeserver_generic_secret_key: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  33313462326162313636643036613465353134313134626562666261326639326138326433386130
+  3734346333383035313831303732323932636435613565660a303366343634396634656333303838
+  34323761653235373136363331333737303634633138306236663131356464623739316435643736
+  3230386237333732350a616137376637656666343033353538343036386631623639326466643163
+  32626438623333346437653465393038303764316462646232323430616462636232646331633130
+  36346264356332366531353564316266646234323735366337613461623034306162393139643630
+  38376337333537653066633664626136326465316662323464303666333365306232626563366233
+  62333531386566616636383736323361313239363531393562336661393037333865316633656333
+  39363866373661636565643834353963303831316566313035656566363263313564333564316565
+  65633431393532623239306435306138356339633566356335613164383038333165613265323631
+  383065363033633238633432393765626561
+# By default, the playbook manages its own Traefik (https://doc.traefik.io/traefik/) reverse-proxy server.
+# It will retrieve SSL certificates for you on-demand and forward requests to all other components.
+# For alternatives, see `docs/configuring-playbook-own-webserver.md`.
+matrix_playbook_reverse_proxy_type: playbook-managed-traefik
+# This is something which is provided to Let's Encrypt when retrieving SSL certificates for domains.
+#
+# In case SSL renewal fails at some point, you'll also get an email notification there.
+#
+# If you decide to use another method for managing SSL certificates (different than the default Let's Encrypt),
+# you won't be required to define this variable (see `docs/configuring-playbook-ssl-certificates.md`).
+#
+# Example value: someone@example.com
+devture_traefik_config_certificatesResolvers_acme_email: 'zac@zac.gg'
+# A Postgres password to use for the superuser Postgres user (called `matrix` by default).
+#
+# The playbook creates additional Postgres users and databases (one for each enabled service)
+# using this superuser account.
+# devture_postgres_connection_password: 'WGGjx5Q82dpR5SoYaMo9ATJ6z8u8SPBGJkjKU8YKRG64jnxvX4iMnxR96xKVLc7T'
+devture_postgres_connection_password: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  66356534353339343565373765346664313366656638643731306137363538363862376536313862
+  3062323534386463356565363438313637376663393839640a393132666165633862613730336635
+  65313132663239313931373563353430383561616265353732386466663630393234313862316366
+  3032316461616361350a316166646133393836373836643462623337346534336365326465366139
+  62383030353065383563656433653631616561666434396566666435313466303861346438646433
+  30646330623066363637643039653834383162323738393437386530306364333934623234646261
+  62653532346439663436646332363566316364313635663234393135353439383664623237333031
+  35633333316632663433
+# wait longer for services to come up
+devture_systemd_service_manager_up_verification_delay_seconds: 29
+# serve the well_known directory from the base domain
+matrix_static_files_container_labels_base_domain_enabled: true
+# enable the matrix dimension
+matrix_dimension_enabled: true
+matrix_dimension_admins:
+  - "@zac:{{ matrix_domain }}"
+matrix_dimension_access_token: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  33386332666234636134663232363139616435346563383763346432613131353332623464646637
+  3034353865613933376533633730313136383132323362650a303361323962653534303763623362
+  32613165386138383333613330646433656262303034613166656439343035636532663436663333
+  3461643966353139320a323139623761313833306461363766376336393261656563616530616634
+  32373236326335306537333865326264663636393438316439646432373536373634623465623135
+  3937383038366433353635396430653363363065316630373763
+matrix_synapse_ext_synapse_s3_storage_provider_enabled: true
+matrix_synapse_ext_synapse_s3_storage_provider_config_bucket: matrix-synapse-media-bucket
+matrix_synapse_ext_synapse_s3_storage_provider_config_region_name: us-east-2
+matrix_synapse_ext_synapse_s3_storage_provider_config_ec2_instance_profile: true
+matrix_synapse_ext_synapse_s3_storage_provider_config_endpoint_url: https://s3.us-east-2.amazonaws.com
+matrix_synapse_ext_synapse_s3_storage_provider_config_storage_class: STANDARD # or STANDARD_IA, etc
+matrix_synapse_admin_enabled: true
+matrix_appservice_discord_enabled: true
+matrix_appservice_discord_client_id: "1118253816631001118"
+matrix_appservice_discord_bot_token: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  31633363623436313164366237346630316162306231656532653535376363376435313039646133
+  3638643437313030326565333661623939646530623530650a633766653832323634623365343930
+  38663261613136653564356663333738336362343561636362643464353162383239666361386538
+  6439643931613232610a653438373139653763363430623939633332333934356363323137363431
+  31373535656639653334346565616239643565393762373134313261363739326663626461633537
+  64623835366134373164666639356362633864646261343130353763306238613534613437303030
+  61356234303862343131363837303037643766343865353266333633336136313533633432666138
+  30613138626136396530
+matrix_appservice_discord_bridge_enableSelfServiceBridging: true
+matrix_hookshot_enabled: true
+matrix_hookshot_generic_allowJsTransformationFunctions: true
