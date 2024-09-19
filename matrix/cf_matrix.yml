@@ -46,7 +46,7 @@ Resources:
         - IpProtocol: "tcp"
           FromPort: "22"
           ToPort: "22"
-          CidrIp: "76.150.165.41/32"
+          CidrIp: "45.20.104.236/32"
         - IpProtocol: "tcp"
           FromPort: "80"
           ToPort: "80"
