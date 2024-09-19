@@ -2,7 +2,8 @@ version: '3'
 tasks:
   deploy-infra:
     cmds:
-      - aws cloudformation deploy \
+      - |
+        aws cloudformation deploy \
         --region us-east-2 \
         --stack-name Matrix \
         --template-file cf_matrix.yml \
