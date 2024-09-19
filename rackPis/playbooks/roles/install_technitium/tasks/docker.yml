@@ -1,0 +1,27 @@
+- name: Ensure Technitium appdata directory exists
+  file:
+    path: "{{ technitium_appdata_dir }}"
+    recurse: true
+    state: directory
+
+- name: Copy Technitium docker-compose.yml to host
+  copy:
+    src: docker-compose.yml
+    dest: "{{ technitium_appdata_dir }}"
+
+- name: Stop the Technitium container
+  community.docker.docker_compose_v2:
+    project_src: "{{ technitium_appdata_dir }}"
+    state: absent
+  become: true
+
+- name: Start the Technitium container
+  community.docker.docker_compose_v2:
+    project_src: "{{ technitium_appdata_dir }}"
+    state: present
+  become: true
+  register: compose_result
+
+- name: Show results
+  ansible.builtin.debug:
+    var: compose_result

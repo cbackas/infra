@@ -1,0 +1,5 @@
+dns_servers:
+  hosts:
+    10.20.34.1:
+  vars:
+    ansible_user: admin

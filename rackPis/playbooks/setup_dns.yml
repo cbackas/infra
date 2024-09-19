@@ -1,0 +1,7 @@
+---
+- name: Setup Local DNS Server
+  hosts: dns_servers
+  roles:
+    - role: geerlingguy.docker
+      become: true
+    - role: install_technitium
