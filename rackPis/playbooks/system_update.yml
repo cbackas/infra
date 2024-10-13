@@ -1,0 +1,41 @@
+---
+- name: Update and restart the Pi
+  hosts: swarm_nodes
+  serial: 1
+  tasks:
+    - name: Drain docker services
+      community.docker.docker_node:
+        hostname: "{{ inventory_hostname }}"
+        availability: drain
+
+    - name: Pause for 15 seconds so the services can drain
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Apt update
+      ansible.builtin.apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+      become: true
+
+    - name: Reboot the pi
+      ansible.builtin.reboot:
+        msg: "Ansible is rebooting the pi to apply updates"
+        reboot_timeout: 1200
+      become: true
+
+    - name: Mount the gluster volume
+      ansible.posix.mount:
+        src: localhost:/gv0
+        path: /mnt/gluster
+        state: mounted
+        fstype: glusterfs
+        opts: defaults,_netdev,backupvolfile-server=localhost
+      become: true
+
+    - name: Re-activate swarm node
+      community.docker.docker_node:
+        hostname: "{{ inventory_hostname }}"
+        availability: active
+
