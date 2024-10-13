@@ -1,5 +1,0 @@
-- name: Prepare the host
-  import_tasks: prep.yml
-
-- name: (re)Start the Technitium container
-  import_tasks: docker.yml

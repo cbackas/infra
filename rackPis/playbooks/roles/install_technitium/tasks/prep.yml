@@ -1,6 +1,0 @@
-- name: Stop systemd-resolved service and disable it
-  ansible.builtin.systemd_service:
-    name: systemd-resolved
-    state: stopped
-    enabled: false
-  become: true
