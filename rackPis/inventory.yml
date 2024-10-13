@@ -3,3 +3,21 @@ dns_servers:
     10.20.34.1:
   vars:
     ansible_user: admin
+swarm_nodes:
+  children:
+    swarm_managers:
+    swarm_workers:
+swarm_managers:
+  hosts:
+    rackPi2:
+      ansible_host: 10.20.34.2
+    rackPi1:
+      ansible_host: 10.20.34.1
+    rackPi3:
+      ansible_host: 10.20.34.3
+  vars:
+    ansible_user: admin
+swarm_workers:
+  hosts:
+  vars:
+    ansible_user: admin

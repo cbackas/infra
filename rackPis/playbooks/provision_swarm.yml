@@ -1,0 +1,161 @@
+---
+- name: Configure networking on hosts
+  hosts: swarm_nodes
+  tasks:
+    - name: Stop systemd-resolved service and disable it
+      ansible.builtin.systemd_service:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
+      become: true
+
+    - name: Populate /etc/resolv.conf with Cloudflare DNS
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: |
+          nameserver 1.1.1.1
+          nameserver 8.8.8.8
+        owner: root
+        group: root
+        mode: '0644'
+        force: yes
+      become: true
+
+- name: Install Docker
+  hosts: swarm_nodes
+  roles:
+    - role: geerlingguy.docker
+      become: true
+  tasks:
+    - name: Install python deps for ansible
+      ansible.builtin.apt:
+        name:
+          - python3-docker
+          - python3-jsondiff
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      register: docker_user_result
+      become: true
+
+    - name: Restart Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted
+      when: docker_user_result.changed
+
+- name: Provision Pi Swarm
+  hosts: swarm_nodes
+  tasks:
+    - name: Init docker swarm
+      community.docker.docker_swarm:
+        state: present
+      register: __output_swarm
+      when: inventory_hostname in groups['swarm_managers'][0]
+
+    - name: Install manager
+      community.docker.docker_swarm:
+        state: join
+        timeout: 60
+        join_token: "{{ hostvars[groups['swarm_managers'][0]]['__output_swarm']['swarm_facts']['JoinTokens']['Manager'] }}"
+        remote_addrs: "{{ groups['swarm_managers'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | first }}"
+      when: inventory_hostname in groups['swarm_managers'] and inventory_hostname not in groups['swarm_managers'][0]
+
+    - name: Install worker
+      community.docker.docker_swarm:
+        state: join
+        timeout: 60
+        join_token: "{{ hostvars[groups['swarm_managers'][0]]['__output_swarm']['swarm_facts']['JoinTokens']['Worker'] }}"
+        remote_addrs: "{{ groups['swarm_managers'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | first }}"
+      when: inventory_hostname in groups['swarm_workers']
+
+- name: Provision GlusterFS
+  hosts: swarm_nodes
+  tasks:
+    - name: Install GlusterFS
+      ansible.builtin.apt:
+        name: glusterfs-server
+        state: present
+      become: true
+
+    - name: Start GlusterFS
+      ansible.builtin.systemd_service:
+        name: glusterd
+        state: started
+        enabled: true
+      become: true
+
+    - name: Check if directory for gluster data exists
+      ansible.builtin.stat:
+        path: /data/brick1/gv0
+      register: gluster_dir
+
+    - name: Ensure directory for gluster data exists
+      ansible.builtin.file:
+        path: /data/brick1/gv0
+        state: directory
+        recurse: true
+      become: true
+      when: not gluster_dir.stat.exists
+
+    - name: Probe GlusterFS peers
+      command: gluster peer probe {{ item }}
+      with_items: "{{ groups['swarm_nodes'] | difference([inventory_hostname]) | map('extract', hostvars, ['ansible_default_ipv4', 'address']) }}"
+      become: true
+      register: probe_result
+      changed_when: "'already in peer list' not in probe_result.stdout"
+      when: inventory_hostname in groups['swarm_managers'][0]
+
+    - name: Create gluster volume
+      command: |
+        gluster volume create gv0 replica {{ groups['swarm_nodes'] | length }} \
+          {{
+            groups['swarm_nodes']
+            | map('extract', hostvars, ['ansible_default_ipv4', 'address'])
+            | map('regex_replace', '(.+)', '\1:/data/brick1/gv0')
+            | join(' ')
+          }} \
+          force
+      become: true
+      register: create_result
+      changed_when: "'already exists' not in create_result.stderr"
+      failed_when: ('already exists' not in create_result.stderr) and create_result.rc != 0
+      when: inventory_hostname in groups['swarm_managers'][0]
+
+    - name: Start gluster volume
+      command: gluster volume start gv0
+      become: true
+      register: start_result
+      changed_when: "'already started' not in start_result.stderr"
+      failed_when: ('already started' not in start_result.stderr) and start_result.rc != 0
+      when: inventory_hostname in groups['swarm_managers'][0]
+
+    - name: Check if directory for gluster mount dir exists
+      ansible.builtin.stat:
+        path: /mnt/gluster
+      register: gluster_mount_dir
+
+    - name: Ensure directory for gluster mount dir exists
+      ansible.builtin.file:
+        path: /mnt/gluster
+        state: directory
+        owner: admin
+        group: docker
+        recurse: true
+      become: true
+      when: not gluster_mount_dir.stat.exists
+
+    - name: Mount the gluster volume
+      ansible.posix.mount:
+        src: localhost:/gv0
+        path: /mnt/gluster
+        state: mounted
+        fstype: glusterfs
+        opts: defaults,_netdev,backupvolfile-server=localhost
+      become: true

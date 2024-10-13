@@ -1,0 +1,58 @@
+---
+- name: Start Technitium DNS service
+  hosts: swarm_managers[0]
+  tasks:
+    - name: Start the technitium service
+      community.general.docker_stack:
+        name: dns-server
+        state: present
+        compose:
+          - version: '3.8'
+            services:
+              technitium:
+                image: technitium/dns-server:latest
+                ports:
+                  - "5380:5380/tcp" # DNS web console (HTTP)
+                  - "53:53/udp" # DNS service
+                  - "53:53/tcp" # DNS service
+                  - "853:853/tcp" # DNS-over-TLS service
+                environment:
+                  - DNS_SERVER_DOMAIN=dns1.zac.arpa # the primary domain name used by this DNS Server to identify itself.
+                  - DNS_SERVER_LOG_USING_LOCAL_TIME=true
+                volumes:
+                  - /mnt/gluster/appdata/technitium/data:/etc/dns
+                sysctls:
+                  - net.ipv4.ip_local_port_range=1024 65000
+                deploy:
+                  mode: replicated
+                  replicas: 1
+
+- name: Start TVBot service
+  hosts: swarm_managers[0]
+  vars_files:
+    - ../vaults/tvbot.yml
+  tasks:
+    - name: Start the tvbot service
+      community.general.docker_stack:
+        name: tvbot
+        state: present
+        compose:
+          - version: '3.8'
+            services:
+              tvbot:
+                image: ghcr.io/cbackas/tvbot:latest
+                environment:
+                  - DISCORD_CLIENT_ID={{ discord_client_id }}
+                  - DISCORD_TOKEN={{ discord_token }}
+                  - DISCORD_GUILD_ID={{ discord_guild_id }}
+                  - TMDB_API_KEY={{ tmdb_api_key }}
+                  - TVDB_API_KEY={{ tvdb_api_key }}
+                  - TVDB_USER_PIN={{ tvdb_user_pin }}
+                  - DATABASE_URL={{ database_url }}
+                  - REGISTER_COMMANDS=true
+                  - HEALTHCHECK_URL={{ healthcheck_url }}
+                  - TZ=America/Chicago
+                deploy:
+                  mode: replicated
+                  replicas: 1
+
