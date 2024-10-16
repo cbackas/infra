@@ -16,7 +16,7 @@ matrix_domain: cback.io
 matrix_homeserver_implementation: synapse
 # A secret used as a base, for generating various other secrets.
 # You can put any string here, but generating a strong one is preferred (e.g. `pwgen -s 64 1`).
-matrix_homeserver_generic_secret_key: "{{ lookup('bitwarden_custom', 'e0c415a9-a419-4cd2-9484-b20b002ab816').value }}"
+matrix_homeserver_generic_secret_key: "{{ lookup('bitwarden.secrets.lookup', 'e0c415a9-a419-4cd2-9484-b20b002ab816') }}"
 # By default, the playbook manages its own Traefik (https://doc.traefik.io/traefik/) reverse-proxy server.
 # It will retrieve SSL certificates for you on-demand and forward requests to all other components.
 # For alternatives, see `docs/configuring-playbook-own-webserver.md`.
@@ -43,7 +43,7 @@ matrix_static_files_container_labels_base_domain_enabled: true
 matrix_dimension_enabled: true
 matrix_dimension_admins:
   - "@zac:{{ matrix_domain }}"
-matrix_dimension_access_token: "{{ lookup('bitwarden_custom', 'a9093cc0-8243-4548-8a2d-b20b002ae51b').value }}"
+matrix_dimension_access_token: "{{ lookup('bitwarden.secrets.lookup', 'a9093cc0-8243-4548-8a2d-b20b002ae51b') }}"
 matrix_synapse_ext_synapse_s3_storage_provider_enabled: true
 matrix_synapse_ext_synapse_s3_storage_provider_config_bucket: matrix-synapse-media-bucket
 matrix_synapse_ext_synapse_s3_storage_provider_config_region_name: us-east-2
@@ -53,7 +53,7 @@ matrix_synapse_ext_synapse_s3_storage_provider_config_storage_class: STANDARD # 
 matrix_synapse_admin_enabled: true
 matrix_appservice_discord_enabled: true
 matrix_appservice_discord_client_id: "1118253816631001118"
-matrix_appservice_discord_bot_token: "{{ lookup('bitwarden_custom', '265ade39-d8d6-4dfe-b18f-b20b002af785').value }}"
+matrix_appservice_discord_bot_token: "{{ lookup('bitwarden.secrets.lookup', '265ade39-d8d6-4dfe-b18f-b20b002af785') }}"
 matrix_appservice_discord_bridge_enableSelfServiceBridging: true
 matrix_hookshot_enabled: true
 matrix_hookshot_generic_allowJsTransformationFunctions: true

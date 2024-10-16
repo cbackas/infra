@@ -32,14 +32,14 @@
   tasks:
     - add_host:
         name: "{{ groups['swarm_managers'][0] }}"
-        discord_client_id: "{{ lookup('bitwarden_custom', 'd6f03b5b-9f05-4e92-ab48-b2080061a5d8').value }}"
-        discord_token: "{{ lookup('bitwarden_custom', 'e29262b8-d1d1-4b01-819a-b2080061cf32').value }}"
-        discord_guild_id: "{{ lookup('bitwarden_custom', '6fc1d0b5-3099-484e-8160-b2080061dc27').value }}"
-        tmdb_api_key: "{{ lookup('bitwarden_custom', '97bb3fbb-b4fe-4d5e-bfc9-b2080061ec30').value }}"
-        tvdb_api_key: "{{ lookup('bitwarden_custom', 'cf58ab16-162f-4a49-84dc-b2080062035a').value }}"
-        tvdb_user_pin: "{{ lookup('bitwarden_custom', 'a62de286-5082-4fd7-9b5d-b20800621118').value }}"
-        database_url: "{{ lookup('bitwarden_custom', '4ac6ad16-2a9d-4fa7-a524-b208006221ff').value }}"
-        healthcheck_url: "{{ lookup('bitwarden_custom', '0d922fba-1ae7-4583-832f-b20800623461').value }}"
+        discord_client_id: "{{ lookup('bitwarden_custom', 'd6f03b5b-9f05-4e92-ab48-b2080061a5d8') }}"
+        discord_token: "{{ lookup('bitwarden_custom', 'e29262b8-d1d1-4b01-819a-b2080061cf32') }}"
+        discord_guild_id: "{{ lookup('bitwarden_custom', '6fc1d0b5-3099-484e-8160-b2080061dc27') }}"
+        tmdb_api_key: "{{ lookup('bitwarden_custom', '97bb3fbb-b4fe-4d5e-bfc9-b2080061ec30') }}"
+        tvdb_api_key: "{{ lookup('bitwarden_custom', 'cf58ab16-162f-4a49-84dc-b2080062035a') }}"
+        tvdb_user_pin: "{{ lookup('bitwarden_custom', 'a62de286-5082-4fd7-9b5d-b20800621118') }}"
+        database_url: "{{ lookup('bitwarden_custom', '4ac6ad16-2a9d-4fa7-a524-b208006221ff') }}"
+        healthcheck_url: "{{ lookup('bitwarden_custom', '0d922fba-1ae7-4583-832f-b20800623461') }}"
       changed_when: false
 
 - name: Start TVBot service
