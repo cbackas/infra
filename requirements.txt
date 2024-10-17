@@ -1,0 +1,4 @@
+ansible
+bitwarden_sdk
+passlib
+pip-review
