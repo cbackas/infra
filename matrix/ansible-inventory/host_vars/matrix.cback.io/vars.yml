@@ -29,12 +29,12 @@ matrix_playbook_reverse_proxy_type: playbook-managed-traefik
 # you won't be required to define this variable (see `docs/configuring-playbook-ssl-certificates.md`).
 #
 # Example value: someone@example.com
-devture_traefik_config_certificatesResolvers_acme_email: 'zac@zac.gg'
+traefik_config_certificatesResolvers_acme_email: 'zac@zac.gg'
 # A Postgres password to use for the superuser Postgres user (called `matrix` by default).
 #
 # The playbook creates additional Postgres users and databases (one for each enabled service)
 # using this superuser account.
-devture_postgres_connection_password: "{{ lookup('bitwarden_custom', 'a5cbcbfb-bf92-4d49-b680-b20b002ad654').value }}"
+postgres_connection_password: "{{ lookup('bitwarden_custom', 'a5cbcbfb-bf92-4d49-b680-b20b002ad654') }}"
 # wait longer for services to come up
 devture_systemd_service_manager_up_verification_delay_seconds: 29
 # serve the well_known directory from the base domain
