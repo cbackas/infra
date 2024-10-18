@@ -39,6 +39,7 @@
         tvdb_user_pin: "{{ lookup('bitwarden.secrets.lookup', 'a62de286-5082-4fd7-9b5d-b20800621118') }}"
         database_url: "{{ lookup('bitwarden.secrets.lookup', '4ac6ad16-2a9d-4fa7-a524-b208006221ff') }}"
         healthcheck_url: "{{ lookup('bitwarden.secrets.lookup', '0d922fba-1ae7-4583-832f-b20800623461') }}"
+      no_log: True
       changed_when: false
 
 - name: Start TVBot service
