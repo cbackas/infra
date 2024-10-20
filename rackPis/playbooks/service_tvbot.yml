@@ -1,0 +1,26 @@
+---
+- name: Create TVBot service
+  hosts: swarm_managers[0]
+  tasks:
+    - community.general.docker_stack:
+        name: tvbot
+        state: present
+        compose:
+          - version: '3.8'
+            services:
+              tvbot:
+                image: ghcr.io/cbackas/tvbot:latest
+                environment:
+                  - REGISTER_COMMANDS=true
+                  - DISCORD_CLIENT_ID={{ lookup('bitwarden.secrets.lookup', 'd6f03b5b-9f05-4e92-ab48-b2080061a5d8') }}
+                  - DISCORD_TOKEN={{ lookup('bitwarden.secrets.lookup', 'e29262b8-d1d1-4b01-819a-b2080061cf32') }}
+                  - DISCORD_GUILD_ID={{ lookup('bitwarden.secrets.lookup', '6fc1d0b5-3099-484e-8160-b2080061dc27') }}
+                  - TVDB_API_KEY={{ lookup('bitwarden.secrets.lookup', 'cf58ab16-162f-4a49-84dc-b2080062035a') }}
+                  - TVDB_USER_PIN={{ lookup('bitwarden.secrets.lookup', 'a62de286-5082-4fd7-9b5d-b20800621118') }}
+                  - DATABASE_URL={{ lookup('bitwarden.secrets.lookup', '4ac6ad16-2a9d-4fa7-a524-b208006221ff') }}
+                  - HEALTHCHECK_URL={{ lookup('bitwarden.secrets.lookup', '0d922fba-1ae7-4583-832f-b20800623461') }}
+                  - TZ=America/Chicago
+                deploy:
+                  mode: replicated
+                  replicas: 1
+
