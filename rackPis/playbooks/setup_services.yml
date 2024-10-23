@@ -2,5 +2,3 @@
 - name: Include Technitium playbook
   import_playbook: service_technitium.yml
 
-- name: Include TVBot playbook
-  import_playbook: service_tvbot.yml
