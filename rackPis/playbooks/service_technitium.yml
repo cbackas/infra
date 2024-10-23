@@ -2,6 +2,12 @@
 - name: Create Technitium DNS service
   hosts: swarm_managers[0]
   tasks:
+    - name: Ensure technitium appdata directory exists
+      ansible.builtin.file:
+        path: /mnt/gluster/appdata/technitium/data
+        state: directory
+        recurse: yes
+
     - name: Start the technitium service
       community.general.docker_stack:
         name: dns-server
