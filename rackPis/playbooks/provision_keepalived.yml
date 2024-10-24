@@ -1,0 +1,110 @@
+---
+- name: Install and configure keepalived on cluster nodes
+  hosts: swarm_nodes
+  tasks:
+    - name: Install keepalived
+      ansible.builtin.apt:
+        name:
+          - keepalived
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Create user to run keepalived scripts
+      ansible.builtin.user:
+        name: keepalived_script
+        group: docker
+        system: true
+        state: present
+        create_home: false
+      become: true
+
+    - name: Create node_active_check.sh
+      ansible.builtin.copy:
+        dest: /usr/local/bin/node_active_check.sh
+        owner: keepalived_script
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          docker node ls -f name=$(hostname) | grep Active > /dev/null 2>&1
+      become: true
+
+    - name: Create node_ready_check.sh
+      ansible.builtin.copy:
+        dest: /usr/local/bin/node_ready_check.sh
+        owner: keepalived_script
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          docker node ls -f name=$(hostname) | grep Ready > /dev/null 2>&1
+      become: true
+
+    - name: Create keepalived.conf
+      ansible.builtin.copy:
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        mode: '0644'
+        content: |
+          ! Configuration File for keepalived
+
+          global_defs {
+            vrrp_startup_delay 5
+            enable_script_security
+            max_auto_priority
+            script_user keepalived_script
+          }
+
+          vrrp_track_process track_docker {
+            script "/usr/bin/pgrep dockerd"
+            interval 2
+            weight 10
+          }
+
+          vrrp_script node_active_check {
+            script "/usr/local/bin/node_active_check.sh"
+            interval 2
+            timeout 5
+            rise 3
+            fall 3
+          }
+
+          vrrp_script node_ready_check {
+            script "/usr/local/bin/node_ready_check.sh"
+            interval 2
+            timeout 5
+            rise 3
+            fall 3
+          }
+
+          vrrp_instance docker_swarm {
+            state MASTER
+            interface eth0
+            virtual_router_id 10
+            priority 100
+            advert_int 1
+            authentication {
+              auth_type PASS
+              auth_pass qA8oW7FH
+            }
+            virtual_ipaddress {
+              10.20.34.34/32
+            }
+            track_process {
+              track_docker
+            }
+            track_script {
+              node_active_check
+            }
+            track_script {
+              node_ready_check
+            }
+          }
+      become: true
+
+    - name: Start keepalived service
+      ansible.builtin.systemd:
+        name: keepalived
+        state: restarted
+        enabled: true
+      become: true
+

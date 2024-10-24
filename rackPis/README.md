@@ -22,6 +22,9 @@ Installs and provisions the Docker Swarm cluster on the Raspberry Pis
 #### [provision_gluster.yml](./playbooks/provision_gluster.yml)
 Installs and provisions the GlusterFS shared storage on the Raspberry Pis
 
+#### [provision_keepalived.yml](./playbooks/provision_keepalived.yml)
+Installs and provisions the Keepalived to enable a shared IP (10.20.34.34) for the nodes
+
 #### [system_update.yml](./playbooks/system_update.yml)
 One by one for each node in the cluster:
 - Drain tasks from the Node
