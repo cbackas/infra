@@ -1,26 +1,4 @@
 ---
-- name: Configure networking on hosts
-  hosts: swarm_nodes
-  tasks:
-    - name: Stop systemd-resolved service and disable it
-      ansible.builtin.systemd_service:
-        name: systemd-resolved
-        state: stopped
-        enabled: false
-      become: true
-
-    - name: Populate /etc/resolv.conf with Cloudflare DNS
-      ansible.builtin.copy:
-        dest: /etc/resolv.conf
-        content: |
-          nameserver 1.1.1.1
-          nameserver 8.8.8.8
-        owner: root
-        group: root
-        mode: '0644'
-        force: yes
-      become: true
-
 - name: Install Docker
   hosts: swarm_nodes
   roles:
