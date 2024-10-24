@@ -1,12 +1,34 @@
 # Rack PIs
 
+- **Cluster configuration:**
+  - 3 Docker swarm manager nodes (which are also worker nodes)
+  - GlusterFS shared storage mount at `/mnt/gluster` on all nodes in cluster
+  - TODO: keepalivd for shared IP?
+- **Services deployed on Pis:**
+  - Technitium DNS
+
 ## Playbooks
 
-### setup_dns.yml
+### [provision_cluster.yml](./playbooks/provision_cluster.yml)
+Runs the following playbooks in order:
+- `provision_swarm.yml`
+- `provision_gluster.yml`
 
-This playbook will setup a local DNS server on the host(s) specified in the ansible inventory group 'dns_servers'. This is intended to handle a bringing a fresh OS up to speed with the packages to run Technitium DNS server.
-Tasks:
-- Disable systemd-resolved
-  - this is a service that's enabled on ubuntu by default that listens on port 53. It needs to be disabled to allow Technitium to bind to port 53.
-- Install Docker/Docker compose
-- Push the [docker compose template](./playbooks/roles/install_technitium/files/docker-compose.yml) to the host and start the container
+### [provision_swarm.yml](./playbooks/provision_swarm.yml)
+Installs and provisions the Docker Swarm cluster on the Raspberry Pis
+
+### [provision_gluster.yml](./playbooks/provision_gluster.yml)
+Installs and provisions the GlusterFS shared storage on the Raspberry Pis
+
+### [system_setup.yml](./playbooks/system_setup.yml)
+One by one for each node in the cluster:
+- Drain tasks from the Node
+- Update system packages
+- Reboot the machine
+- Mark the node as available for tasks
+
+### [setup_services.yml](./playbooks/setup_services.yml)
+Deploys all services to the cluster
+
+### [service_technitium.yml](./playbooks/service_technitium.yml)
+Deploys Technitium DNS container to the cluster

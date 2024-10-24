@@ -1,0 +1,4 @@
+---
+- import_playbook: provision_swarm.yml
+- import_playbook: provision_gluster.yml
+

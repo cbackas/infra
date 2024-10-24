@@ -75,6 +75,3 @@
         remote_addrs: "{{ groups['swarm_managers'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | first }}"
       when: inventory_hostname in groups['swarm_workers']
 
-- name: Setup GlusterFS
-  ansible.builtin.import_playbook: provision_gluster.yml
-

@@ -1,4 +1,3 @@
 ---
-- name: Include Technitium playbook
-  import_playbook: service_technitium.yml
+- import_playbook: service_technitium.yml
 
