@@ -9,26 +9,30 @@
 
 ## Playbooks
 
-### [provision_cluster.yml](./playbooks/provision_cluster.yml)
+### System/Cluster Provisioning
+
+#### [provision_cluster.yml](./playbooks/provision_cluster.yml)
 Runs the following playbooks in order:
 - `provision_swarm.yml`
 - `provision_gluster.yml`
 
-### [provision_swarm.yml](./playbooks/provision_swarm.yml)
+#### [provision_swarm.yml](./playbooks/provision_swarm.yml)
 Installs and provisions the Docker Swarm cluster on the Raspberry Pis
 
-### [provision_gluster.yml](./playbooks/provision_gluster.yml)
+#### [provision_gluster.yml](./playbooks/provision_gluster.yml)
 Installs and provisions the GlusterFS shared storage on the Raspberry Pis
 
-### [system_setup.yml](./playbooks/system_setup.yml)
+#### [system_update.yml](./playbooks/system_update.yml)
 One by one for each node in the cluster:
 - Drain tasks from the Node
 - Update system packages
 - Reboot the machine
 - Mark the node as available for tasks
 
-### [setup_services.yml](./playbooks/setup_services.yml)
+### Service Provisioning
+
+#### [setup_services.yml](./playbooks/setup_services.yml)
 Deploys all services to the cluster
 
-### [service_technitium.yml](./playbooks/service_technitium.yml)
+#### [service_technitium.yml](./playbooks/service_technitium.yml)
 Deploys Technitium DNS container to the cluster
