@@ -1,6 +1,6 @@
 # Zac's IaC
 
-This repo contains various infrastructure as code (IaC) projects that I have deployed either locally or in the cloud, where it didn't make sense to keep the infrastructure in the same repo as any parcitular application.
+This repo contains various infrastructure as code (IaC) projects that I have deployed either locally or in the cloud, where it didn't make sense to keep the infrastructure in the same repo as any particular application.
 
 ## Projects
 
