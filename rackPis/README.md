@@ -15,6 +15,7 @@
 Runs the following playbooks in order:
 - `provision_swarm.yml`
 - `provision_gluster.yml`
+- `provision_keepalived.yml`
 
 #### [provision_swarm.yml](./playbooks/provision_swarm.yml)
 Installs and provisions the Docker Swarm cluster on the Raspberry Pis
