@@ -1,5 +1,5 @@
 ---
-- name: Create Technitium DNS service
+- name: Create Technitium DNS Stack
   hosts: swarm_managers[0]
   tasks:
     - name: Ensure technitium appdata directory exists

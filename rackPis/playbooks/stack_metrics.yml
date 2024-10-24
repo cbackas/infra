@@ -1,0 +1,131 @@
+---
+- name: Create Metrics Stack
+  hosts: swarm_managers[0]
+  vars:
+    # paths
+    grafana_appdata: /mnt/gluster/appdata/grafana
+    mysql_appdata: /mnt/gluster/appdata/grafana_mysql
+    influxdb_appdata: /mnt/gluster/appdata/influxdb
+    prometheus_appdata: /mnt/gluster/appdata/prometheus
+    # secrets
+    grafana_password: "{{ lookup('bitwarden.secrets.lookup', '1cd48944-56c7-4894-b8ca-b213006b963d') }}"
+    mysql_password: "{{ lookup('bitwarden.secrets.lookup', '64b84085-2076-4d51-81ff-b213006f945f') }}"
+    uptimekuma_password: "{{ lookup('bitwarden.secrets.lookup', '14e51186-454a-4e12-bf89-b2130089d80a') }}"
+  tasks:
+    - name: Ensure appdata directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        recurse: yes
+        owner: admin
+        group: docker
+      with_items:
+        - "{{ grafana_appdata }}"
+        - "{{ mysql_appdata }}"
+        - "{{ influxdb_appdata }}"
+        - "{{ prometheus_appdata }}/data"
+        - "{{ prometheus_appdata }}/etc"
+      become: true
+
+    - name: Create prometheus config
+      ansible.builtin.copy:
+        dest: "{{ prometheus_appdata }}/etc/prometheus.yml"
+        content: |
+          global:
+            scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+            evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+            # scrape_timeout is set to the global default (10s).
+
+          scrape_configs:
+            - job_name: 'uptime'
+              scrape_interval: 30s
+              scheme: http
+              metrics_path: '/metrics'
+              static_configs:
+                - targets: ['status.zac.gg']
+              basic_auth:
+                username: zac
+                password: {{ uptimekuma_password }}
+        owner: admin
+        group: docker
+        mode: '0644'
+      become: true
+
+    - name: Create the metrics stack
+      community.general.docker_stack:
+        name: metrics
+        state: present
+        compose:
+          - version: '3.8'
+            services:
+              mysql:
+                image: mysql:8.0
+                environment:
+                  - MYSQL_ROOT_PASSWORD={{ mysql_password }}
+                  - MYSQL_DATABASE=grafana
+                volumes:
+                  - "{{ mysql_appdata }}:/var/lib/mysql"
+                user: "1000"
+                deploy:
+                  mode: replicated
+                  replicas: 1
+                  restart_policy:
+                    condition: on-failure
+                    delay: 5s
+                    max_attempts: 3
+                    window: 10s
+              influxdb:
+                image: influxdb:1.8
+                ports:
+                  - "8086:8086/tcp"
+                volumes:
+                  - "{{ influxdb_appdata }}:/var/lib/influxdb"
+                user: "1000"
+                deploy:
+                  mode: replicated
+                  replicas: 1
+                  restart_policy:
+                    condition: on-failure
+                    delay: 5s
+                    max_attempts: 3
+                    window: 10s
+              prometheus:
+                image: prom/prometheus
+                volumes:
+                  - "{{ prometheus_appdata }}/data:/prometheus/data"
+                  - "{{ prometheus_appdata }}/etc:/etc/prometheus"
+                deploy:
+                  mode: replicated
+                  replicas: 1
+                  restart_policy:
+                    condition: on-failure
+                    delay: 5s
+                    max_attempts: 3
+                    window: 10s
+              grafana:
+                image: grafana/grafana
+                depends_on:
+                  - mysql
+                ports:
+                  - "3000:3000/tcp"
+                environment:
+                  - GF_SERVER_ROOT_URL=https://dash.zac.gg
+                  - GF_SECURITY_ADMIN_PASSWORD={{ grafana_password }}
+                  - GF_PANELS_DISABLE_SANITIZE_HTML=true
+                  - GF_DATABASE_TYPE=mysql
+                  - GF_DATABASE_HOST=mysql:3306
+                  - GF_DATABASE_NAME=grafana
+                  - GF_DATABASE_USER=root
+                  - GF_DATABASE_PASSWORD={{ mysql_password }}
+                volumes:
+                  - "{{ grafana_appdata }}:/var/lib/grafana"
+                user: "1000"
+                deploy:
+                  mode: replicated
+                  replicas: 1
+                  restart_policy:
+                    condition: on-failure
+                    delay: 5s
+                    max_attempts: 3
+                    window: 10s
+

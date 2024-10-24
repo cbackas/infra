@@ -35,8 +35,11 @@ One by one for each node in the cluster:
 
 ### Service Provisioning
 
-#### [setup_services.yml](./playbooks/setup_services.yml)
+#### [stack_all.yml](./playbooks/stack_all.yml)
 Deploys all services to the cluster
 
-#### [service_technitium.yml](./playbooks/service_technitium.yml)
+#### [stack_dns.yml](./playbooks/stack_dns.yml)
 Deploys Technitium DNS container to the cluster
+
+#### [stack_metrics.yml](./playbooks/stack_metrics.yml)
+Deploys Grafana, InfluxDB, Prometheus, and other metrics related services to the cluster
