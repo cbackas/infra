@@ -8,7 +8,7 @@
         hostname: "{{ inventory_hostname }}"
         availability: drain
 
-    - name: Pause for 15 seconds so the services can drain
+    - name: Pause so the services can drain
       ansible.builtin.pause:
         seconds: 5
 
