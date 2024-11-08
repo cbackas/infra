@@ -19,6 +19,16 @@
         state: latest
       become: true
 
+    - name: Prune Docker
+      community.docker.docker_prune:
+        containers: true
+        images: true
+        images_filters:
+          dangling: false
+        networks: true
+        volumes: true
+        builder_cache: true
+
     - name: Reboot the pi
       ansible.builtin.reboot:
         msg: "Ansible is rebooting the pi to apply updates"
