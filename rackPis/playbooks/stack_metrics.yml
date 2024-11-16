@@ -7,6 +7,7 @@
     mysql_appdata: /mnt/gluster/appdata/grafana_mysql
     influxdb_appdata: /mnt/gluster/appdata/influxdb
     prometheus_appdata: /mnt/gluster/appdata/prometheus
+    telegraf_appdata: /mnt/gluster/appdata/telegraf
     # secrets
     grafana_password: "{{ lookup('bitwarden.secrets.lookup', '1cd48944-56c7-4894-b8ca-b213006b963d') }}"
     mysql_password: "{{ lookup('bitwarden.secrets.lookup', '64b84085-2076-4d51-81ff-b213006f945f') }}"
@@ -25,7 +26,13 @@
         - "{{ influxdb_appdata }}"
         - "{{ prometheus_appdata }}/data"
         - "{{ prometheus_appdata }}/etc"
+        - "{{ telegraf_appdata }}"
       become: true
+
+    - name: Create telegraf config
+      ansible.builtin.copy:
+        dest: "{{ telegraf_appdata }}/telegraf.conf"
+        src: ../files/telegraf.conf
 
     - name: Create prometheus config
       ansible.builtin.copy:
@@ -123,6 +130,30 @@
                 deploy:
                   mode: replicated
                   replicas: 1
+                  restart_policy:
+                    condition: on-failure
+                    delay: 5s
+                    max_attempts: 3
+                    window: 10s
+              telegraf:
+                image: telegraf:latest
+                hostname: "{% raw %}{{.Node.Hostname}}{% endraw %}"
+                volumes:
+                  - /var/run/docker.sock:/var/run/docker.sock:ro
+                  - "{{ telegraf_appdata }}/telegraf.conf:/etc/telegraf/telegraf.conf"
+                  - /dev:/dev:ro
+                  - /run/udev:/run/udev:ro
+                  - /:/hostfs:ro
+                environment:
+                  - HOST_ETC=/hostfs/etc
+                  - HOST_PROC=/hostfs/proc
+                  - HOST_SYS=/hostfs/sys
+                  - HOST_VAR=/hostfs/var
+                  - HOST_RUN=/hostfs/run
+                  - HOST_MOUNT_PREFIX=/hostfs
+                user: telegraf:988
+                deploy:
+                  mode: global
                   restart_policy:
                     condition: on-failure
                     delay: 5s
