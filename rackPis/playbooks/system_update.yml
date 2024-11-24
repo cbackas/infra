@@ -3,10 +3,10 @@
   hosts: swarm_nodes
   serial: 1
   tasks:
-    - name: Drain docker services
-      community.docker.docker_node:
-        hostname: "{{ inventory_hostname }}"
-        availability: drain
+    - import_role:
+        name: update_node_availability
+      vars:
+        availability_mode: drain
 
     - name: Pause so the services can drain
       ansible.builtin.pause:
@@ -44,8 +44,7 @@
         opts: defaults,_netdev,backupvolfile-server=localhost
       become: true
 
-    - name: Re-activate swarm node
-      community.docker.docker_node:
-        hostname: "{{ inventory_hostname }}"
-        availability: active
-
+    - import_role:
+        name: update_node_availability
+      vars:
+        availability_mode: active
