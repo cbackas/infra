@@ -22,6 +22,7 @@
       register: docker_user_result
       become: true
 
+    # TODO it seems like docker wasn't ready to be restarted yet, add a check or a pause?
     - name: Restart Docker service
       ansible.builtin.systemd:
         name: docker
@@ -45,6 +46,7 @@
         remote_addrs: "{{ groups['swarm_managers'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | first }}"
       when: inventory_hostname in groups['swarm_managers'] and inventory_hostname not in groups['swarm_managers'][0]
 
+    # TODO this didn't work first time, rerunning the playbook it worked? Investigate
     - name: Install worker
       community.docker.docker_swarm:
         state: join
