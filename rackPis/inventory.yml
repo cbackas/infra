@@ -14,5 +14,7 @@ swarm_managers:
     ansible_user: admin
 swarm_workers:
   hosts:
+    rackPi4:
+      ansible_host: 10.20.34.4
   vars:
     ansible_user: admin
