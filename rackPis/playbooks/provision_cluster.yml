@@ -21,6 +21,7 @@
         force: yes
       become: true
 
+- import_playbook: provision_ssh.yml
 - import_playbook: provision_swarm.yml
 - import_playbook: provision_gluster.yml
 - import_playbook: provision_keepalived.yml

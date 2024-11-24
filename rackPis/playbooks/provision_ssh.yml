@@ -1,0 +1,30 @@
+---
+- name: Configure SSH commnunication between the nodes
+  hosts: swarm_nodes
+  vars:
+    ssh_pub_node_to_node: "{{ lookup('bitwarden.secrets.lookup', '6ae8acb7-3414-4862-898a-b232001a72c5') }}"
+    ssh_priv_node_to_node: "{{ lookup('bitwarden.secrets.lookup', '72a698a5-7c19-43ea-91eb-b232001a9aa7') }}"
+  tasks:
+    - name: Ensure the SSH directory exists
+      file:
+        path: /home/{{ ansible_user }}/.ssh
+        state: directory
+        mode: '0700'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Copy the ED25519 private key
+      copy:
+        content: "{{ ssh_priv_node_to_node }}"
+        dest: /home/{{ ansible_user }}/.ssh/node_to_node
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+      no_log: true
+
+    - name: Add the public key to authorized_keys using the authorized_key module
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ ssh_pub_node_to_node }}"
+        state: present
+
