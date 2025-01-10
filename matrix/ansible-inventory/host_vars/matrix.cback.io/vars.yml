@@ -40,10 +40,10 @@ devture_systemd_service_manager_up_verification_delay_seconds: 29
 # serve the well_known directory from the base domain
 matrix_static_files_container_labels_base_domain_enabled: true
 # enable the matrix dimension
-matrix_dimension_enabled: true
-matrix_dimension_admins:
-  - "@zac:{{ matrix_domain }}"
-matrix_dimension_access_token: "{{ lookup('bitwarden.secrets.lookup', 'a9093cc0-8243-4548-8a2d-b20b002ae51b') }}"
+matrix_dimension_enabled: false
+# matrix_dimension_admins:
+#   - "@zac:{{ matrix_domain }}"
+# matrix_dimension_access_token: "{{ lookup('bitwarden.secrets.lookup', 'a9093cc0-8243-4548-8a2d-b20b002ae51b') }}"
 matrix_synapse_ext_synapse_s3_storage_provider_enabled: true
 matrix_synapse_ext_synapse_s3_storage_provider_config_bucket: matrix-synapse-media-bucket
 matrix_synapse_ext_synapse_s3_storage_provider_config_region_name: us-east-2
