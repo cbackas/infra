@@ -37,8 +37,8 @@
 
     - name: Mount the gluster volume
       ansible.posix.mount:
-        src: localhost:/gv0
-        path: /mnt/gluster
+        src: localhost:/appdata
+        path: /mnt/gluster/appdata
         state: mounted
         fstype: glusterfs
         opts: defaults,_netdev,backupvolfile-server=localhost
