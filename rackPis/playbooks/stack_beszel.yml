@@ -1,0 +1,58 @@
+---
+- name: Create Beszel Stack
+  hosts: swarm_managers[0]
+  vars:
+    # paths
+    beszel_appdata: /mnt/gluster/appdata/beszel
+  tasks:
+    - name: Ensure appdata directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        recurse: yes
+        owner: admin
+        group: docker
+      with_items:
+        - "{{ beszel_appdata }}"
+      become: true
+
+    - name: Create the beszel stack
+      community.general.docker_stack:
+        name: beszel
+        state: present
+        compose:
+          - version: '3.8'
+            services:
+              beszel_hub:
+                image: henrygd/beszel
+                ports:
+                  - 8090:8090
+                volumes:
+                  - "{{ beszel_appdata }}:/beszel_data"
+                deploy:
+                  mode: replicated
+                  replicas: 1
+                  restart_policy:
+                    condition: on-failure
+                    delay: 5s
+                    max_attempts: 3
+                    window: 10s
+
+- name: Install/setup beszel agent on all nodes
+  hosts: swarm_nodes
+  tasks:
+    - name: Check if beszel agent is installed
+      ansible.builtin.stat:
+        path: /opt/beszel-agent
+        get_checksum: no
+      register: beszel_agent_installed
+    - name: Download beszel agent installer
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/henrygd/beszel/main/supplemental/scripts/install-agent.sh
+        dest: /tmp/install-agent.sh
+        mode: '0755'
+    - name: Install beszel agent
+      ansible.builtin.command:
+        cmd: /tmp/install-agent.sh -p 45876 -k "{{ lookup('bitwarden.secrets.lookup', '86444576-257f-41a4-8dfe-b2820101293e') }}"
+      args:
+        stdin: "y" # say yes to the auto update prompt
