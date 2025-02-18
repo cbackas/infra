@@ -21,6 +21,15 @@
         force: yes
       become: true
 
+- hosts: swarm_nodes
+  vars:
+    journald_persistent: true
+    journald_max_disk_size: 6000
+    journald_compression: true
+  become: true
+  roles:
+    - linux-system-roles.journald
+
 - import_playbook: provision_ssh.yml
 - import_playbook: provision_swarm.yml
 - import_playbook: provision_gluster.yml
