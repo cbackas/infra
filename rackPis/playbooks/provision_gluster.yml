@@ -1,4 +1,4 @@
-- name: Provision GlusterFS
+- name: Install GlusterFS
   hosts: swarm_nodes
   tasks:
     - name: Install GlusterFS
@@ -14,59 +14,72 @@
         enabled: true
       become: true
 
+- name: Create GlusterFS Brick Directory
+  hosts: swarm_nodes
+  tasks:
     - name: Check if directory for gluster data exists
       ansible.builtin.stat:
-        path: /data/brick1/gv0
+        path: /bricks/appdata
       register: gluster_dir
 
     - name: Ensure directory for gluster data exists
       ansible.builtin.file:
-        path: /data/brick1/gv0
+        path: /bricks/appdata
         state: directory
         recurse: true
       become: true
       when: not gluster_dir.stat.exists
 
+- name: Create GlusterFS Volume
+  hosts: swarm_managers[0]
+  tasks:
     - name: Probe GlusterFS peers
       command: gluster peer probe {{ item }}
       with_items: "{{ groups['swarm_nodes'] | difference([inventory_hostname]) | map('extract', hostvars, ['ansible_default_ipv4', 'address']) }}"
       become: true
       register: probe_result
       changed_when: "'already in peer list' not in probe_result.stdout"
-      when: inventory_hostname in groups['swarm_managers'][0]
 
-    - name: Create gluster volume
-      command: |
-        gluster volume create gv0 replica {{ groups['swarm_nodes'] | length }} \
-          {{
-            groups['swarm_nodes']
-            | map('extract', hostvars, ['ansible_default_ipv4', 'address'])
-            | map('regex_replace', '(.+)', '\1:/data/brick1/gv0')
-            | join(' ')
-          }} \
-          force
+    - name: create gluster volume
+      gluster.gluster.gluster_volume:
+        state: present
+        name: appdata
+        bricks: /bricks/appdata
+        cluster: "{{ groups['swarm_nodes'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | list }}"
+        options:
+          { storage.owner-uid: "1000",
+            storage.owner-gid: "988"
+          }
+        replicas: "{{ groups['swarm_nodes'] | length }}"
+        force: true
       become: true
-      register: create_result
-      changed_when: "'already exists' not in create_result.stderr"
-      failed_when: ('already exists' not in create_result.stderr) and create_result.rc != 0
-      when: inventory_hostname in groups['swarm_managers'][0]
+      run_once: true
 
     - name: Start gluster volume
-      command: gluster volume start gv0
+      gluster.gluster.gluster_volume:
+        state: started
+        name: appdata
       become: true
-      register: start_result
-      changed_when: "'already started' not in start_result.stderr"
-      failed_when: ('already started' not in start_result.stderr) and start_result.rc != 0
-      when: inventory_hostname in groups['swarm_managers'][0]
+      run_once: true
 
+- name: Mount GlusterFS Volume
+  hosts: swarm_nodes
+  tasks:
     - name: Check if directory for gluster mount dir exists
       ansible.builtin.stat:
-        path: /mnt/gluster
+        path: /mnt/gluster/appdata
       register: gluster_mount_dir
+
+    - name: Unmount broken mount
+      ansible.posix.mount:
+        path: /mnt/gluster/appdata
+        state: unmounted
+      become: true
+      when: gluster_mount_dir.msg is defined and gluster_mount_dir.msg == "Transport endpoint is not connected"
 
     - name: Ensure directory for gluster mount dir exists
       ansible.builtin.file:
-        path: /mnt/gluster
+        path: /mnt/gluster/appdata
         state: directory
         owner: admin
         group: docker
@@ -76,8 +89,8 @@
 
     - name: Mount the gluster volume
       ansible.posix.mount:
-        src: localhost:/gv0
-        path: /mnt/gluster
+        src: localhost:/appdata
+        path: /mnt/gluster/appdata
         state: mounted
         fstype: glusterfs
         opts: defaults,_netdev,backupvolfile-server=localhost
