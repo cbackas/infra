@@ -1,0 +1,13 @@
+---
+collections:
+- name: bitwarden.secrets
+- name: community.docker
+- name: gluster.gluster
+
+roles:
+- name: linux-system-roles.journald
+  version: 1.3.5
+- name: geerlingguy.docker
+  version: 7.4.5
+- name: geerlingguy.pip
+  version: 3.1.0
