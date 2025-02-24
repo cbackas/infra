@@ -1,0 +1,23 @@
+encryption_passphrase: "{{ lookup('bitwarden.secrets.lookup', 'bdc0c593-4150-43d5-93bf-b28e00503d32') }}"
+
+source_directories:
+  - /mnt/gluster/appdata/beszel
+  - /mnt/gluster/appdata/grafana
+  - /mnt/gluster/appdata/technitium
+
+mysql_databases:
+  - name: grafana
+    hostname: 10.20.34.34
+    port: 3306
+    username: root
+    password: "{{ lookup('bitwarden.secrets.lookup', '64b84085-2076-4d51-81ff-b213006f945f') }}"
+    options: "--skip-comments"
+
+repositories:
+  - path: /home/admin/backups/rackpi_appdata
+    label: local
+
+keep_daily: 7
+keep_weekly: 4
+keep_monthly: 3
+

@@ -1,0 +1,79 @@
+---
+- name: Install backup utilities
+  hosts: swarm_managers[0]
+  gather_facts: false
+  tasks:
+    - name: Install borg, borgmatic, and rclone
+      ansible.builtin.apt:
+        state: present
+        name:
+          - borgbackup
+          - borgmatic
+          - mysql-client
+          - rclone
+      become: true
+
+- name: Configure borgmatic
+  hosts: swarm_managers[0]
+  gather_facts: false
+  vars:
+    borgmatic_config: /home/admin/.config/borgmatic/config.yaml
+    backup_script: /home/admin/backup-appdata.sh
+  tasks:
+    - name: Create borgmatic configuration
+      ansible.builtin.template:
+        src: borgmatic.config.yaml
+        dest: "{{ borgmatic_config }}"
+        owner: admin
+        group: admin
+      become: true
+
+    - name: Create backup script
+      ansible.builtin.copy:
+        src: backup-appdata.sh
+        dest: "{{ backup_script }}"
+        owner: admin
+        group: admin
+        mode: a+x
+      become: true
+
+    - name: Check if borgmatic config is valid
+      command: borgmatic -c {{ borgmatic_config }} config validate
+      become: true
+      changed_when: false
+
+    - name: Ensure borgmatic repo folder exists
+      ansible.builtin.file:
+        path: /home/admin/backups/rackpi_appdata
+        state: directory
+      become: true
+
+    - name: Iniiialize borgmatic repo
+      command: borgmatic init -c {{ borgmatic_config }} --encryption repokey
+      register: borgmatic_init
+      changed_when: borgmatic_init.stdout != "" and borgmatic_init.stderr == ""
+
+    - name: Initialize log file
+      ansible.builtin.file:
+        path: /var/log/borgmatic-appdata.log
+        state: touch
+        owner: admin
+        group: admin
+      become: true
+
+    - name: Schedule daily backups
+      ansible.builtin.cron:
+        name: "Borgmatic daily backup"
+        minute: 0
+        hour: 2
+        job: "{{ backup_script }} >> /var/log/borgmatic-appdata.log 2>&1"
+        user: admin
+
+    - name: Check if the rclone mount is working
+      command: rclone lsd onedrive-zacgg:/backups
+      register: rclone_check
+      changed_when: false
+      failed_when: false
+
+    - debug: msg="Rclone mount 'onedrive-zacgg' is not working, check the logs and use `rclone config` to fix the connection"
+      when: rclone_check.rc != 0

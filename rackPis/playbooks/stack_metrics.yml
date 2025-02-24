@@ -66,6 +66,8 @@
                   - MYSQL_DATABASE=grafana
                 volumes:
                   - "{{ mysql_appdata }}:/var/lib/mysql"
+                ports:
+                  - "3306:3306/tcp"
                 user: "1000"
                 deploy:
                   mode: replicated
