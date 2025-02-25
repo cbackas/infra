@@ -18,3 +18,9 @@ swarm_workers:
       ansible_host: 10.20.34.4
   vars:
     ansible_user: admin
+other:
+  hosts:
+    dashboardpi:
+      ansible_host: 10.20.30.252
+      ansible_user: admin
+

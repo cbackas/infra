@@ -1,0 +1,42 @@
+---
+- name: Configure dashboard pi
+  hosts: dashboardpi
+  gather_facts: false
+  vars:
+    grafana_dashboard_url: "{{ lookup('bitwarden.secrets.lookup', '10eaf870-8a13-4178-aead-b28f001bb191') }}"
+  tasks:
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - evemu-tools
+          - chromium-browser
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Configure wayfire entries
+      ansible.builtin.ini_file:
+        path: "~/.config/wayfire.ini"
+        section: "{{ item.section }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+        create: yes
+        mode: 0644
+      loop:
+        - {section: 'output:HDMI-A-1', option: 'transform', value: '90'}
+        - {section: 'autostart', option: 'background', value: 'wfrespawn pcmanfm --desktop --profile LXDE-pi'}
+        - {section: 'autostart', option: 'xdg-autostart', value: 'lxsession-xdg-autostart'}
+        - {section: 'autostart', option: 'move-mouse', value: '/usr/bin/evemu-event "/dev/input/by-id/usb-Logitech_USB_Receiver-if02-event-mouse" --type EV_REL --code REL_X --value 600 --sync'}
+        - {section: 'autostart', option: 'chrome-dashboard', value: "chromium-browser --kiosk {{ grafana_dashboard_url }}?from=now-6h&to=now&timezone=browser&refresh=10s&theme=dark&kiosk --noerrdialogs --disable-infobars --no-first-run --ozone-platform=wayland --enable-features=OverlayScrollbar --autoplay-policy=no-user-gesture-required --start-maximized --force-dark-mode"}
+        - {section: 'autostart', option: 'screensaver', value: 'false'}
+        - {section: 'autostart', option: 'dpms', value: 'false'}
+
+    - name: Schedule nightly reboot
+      ansible.builtin.cron:
+        name: "Reboot"
+        minute: 30
+        hour: 3
+        job: "sudo /sbin/reboot"
+        state: present
+      become: true
+
