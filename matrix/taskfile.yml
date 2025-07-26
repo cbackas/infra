@@ -1,6 +1,8 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: '3'
 tasks:
   deploy-infra:
+    desc: "Deploy AWS CloudFormation stack"
     cmds:
       - |
         aws cloudformation deploy \
@@ -8,13 +10,31 @@ tasks:
         --stack-name Matrix \
         --template-file cf_matrix.yml \
         --capabilities CAPABILITY_IAM
-    desc: "Deploy AWS CloudFormation stack"
+  update:
+    desc: "Update the Matrix installation - auto fetches newest submodule"
+    deps:
+      - update-submodules
+    cmds:
+      - task: ansible-deploy
+  ansible-deploy:
+    desc: "Deploy Matrix using Ansible"
+    dir: ./ansible-deploy
+    cmds:
+      - agru
+      - just roles
+      - just setup-all
+    preconditions:
+      - sh: $([ "$(dirname $(dirname $(which python3)))" = "$(realpath ../../.venv)" ])
+        msg: "You need the infra python virtual environment activated to run this task."
   init-submodules:
     cmds:
       - git submodule update --init --recursive
+      - task: update-submodules
   update-submodules:
+    desc: "Update git submodules and link inventory"
     cmds:
       - git submodule update --recursive --remote --rebase
+      - task: link-inventory
   link-inventory:
     cmds:
       - ./hardlink_inventory.sh link
