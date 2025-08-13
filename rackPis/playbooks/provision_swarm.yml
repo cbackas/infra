@@ -22,7 +22,13 @@
       register: docker_user_result
       become: true
 
-    # TODO it seems like docker wasn't ready to be restarted yet, add a check or a pause?
+    - name: Wait for Docker socket to be available
+      ansible.builtin.wait_for:
+        path: /var/run/docker.sock
+        state: started
+        timeout: 30
+      become: true
+
     - name: Restart Docker service
       ansible.builtin.systemd:
         name: docker
@@ -54,4 +60,8 @@
         join_token: "{{ hostvars[groups['swarm_managers'][0]]['__output_swarm']['swarm_facts']['JoinTokens']['Worker'] }}"
         remote_addrs: "{{ groups['swarm_managers'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | first }}"
       when: inventory_hostname in groups['swarm_workers']
+      retries: 5
+      delay: 5
+      register: worker_join_result
+      until: worker_join_result is succeeded
 
