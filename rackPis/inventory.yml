@@ -10,6 +10,10 @@ swarm_managers:
       ansible_host: 10.20.34.1
     rackPi3:
       ansible_host: 10.20.34.3
+    rackPi5:
+      ansible_host: 10.20.34.5
+    rackPi6:
+      ansible_host: 10.20.34.6
   vars:
     ansible_user: admin
 swarm_workers:
