@@ -13,24 +13,12 @@
   set_fact:
     is_manager: "{{ inventory_hostname in groups['swarm_managers'] }}"
 
-- name: Drain docker services
+- name: "{{ 'Activate' if availability_mode == 'active' else 'Drain' }} docker services"
   community.docker.docker_node:
     hostname: "{{ inventory_hostname }}"
-    availability: drain
+    availability: "{{ availability_mode }}"
   delegate_to: "{{ omit if is_manager else hostvars[groups['swarm_managers'][0]].ansible_host }}"
   vars:
     ansible_ssh_private_key_file: '/home/admin/.ssh/node_to_node'
     host_key_checking: false
     ansible_user: 'admin'
-  when: availability_mode == 'drain'
-
-- name: Activate swarm node
-  community.docker.docker_node:
-    hostname: "{{ inventory_hostname }}"
-    availability: active
-  delegate_to: "{{ omit if is_manager else hostvars[groups['swarm_managers'][0]].ansible_host }}"
-  vars:
-    ansible_ssh_private_key_file: '/home/admin/.ssh/node_to_node'
-    host_key_checking: false
-    ansible_user: 'admin'
-  when: availability_mode == 'active'
