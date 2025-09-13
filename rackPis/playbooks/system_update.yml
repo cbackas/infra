@@ -45,6 +45,6 @@
       become: true
 
     - import_role:
-        name: update_node_availability
+        name: roles/update_node_availability
       vars:
         availability_mode: active
