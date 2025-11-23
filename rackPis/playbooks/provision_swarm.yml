@@ -22,18 +22,33 @@
       register: docker_user_result
       become: true
 
-    - name: Wait for Docker socket to be available
-      ansible.builtin.wait_for:
-        path: /var/run/docker.sock
-        state: started
-        timeout: 30
-      become: true
+    - name: Ensure Docker systemd override directory exists
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
 
-    - name: Restart Docker service
-      ansible.builtin.systemd:
+    - name: Set Docker systemd override to wait for network-online
+      copy:
+        dest: /etc/systemd/system/docker.service.d/override.conf
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Requires=network-online.target
+          After=network-online.target
+
+    - name: Reload systemd daemon to apply changes
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: Restart Docker to ensure new dependencies are honored
+      ansible.builtin.systemd_service:
         name: docker
         state: restarted
-      when: docker_user_result.changed
 
 - name: Provision Pi Swarm
   hosts: swarm_nodes
