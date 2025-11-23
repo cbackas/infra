@@ -4,10 +4,10 @@
 #
 
 app = 'zacs-uptime-kuma'
-primary_region = 'den'
+primary_region = 'dfw'
 
 [build]
-  image = 'louislam/uptime-kuma:1'
+  image = 'louislam/uptime-kuma:2'
 
 [[mounts]]
   source = 'kuma_data'
